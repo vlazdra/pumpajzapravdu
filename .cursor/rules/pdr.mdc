@@ -1,0 +1,316 @@
+---
+description: When I ask you to continue from a step of the project or to implement a step from the project defintion
+globs: 
+alwaysApply: false
+---
+Below is the project plan for "Pumpaj za pravdu" styled as markdown, based on the provided text. Markdown syntax is used to enhance readability with headings, lists, bold text, code blocks, and blockquotes where appropriate.
+
+```markdown
+# Project Plan: Pumpaj za pravdu
+
+## 1. Project Overview
+
+**Name:** Pumpaj za pravdu
+
+**Description:** A web application allowing users to register and find informal gatherings (locals, communities, spaces) to collectively watch the arrival of Serbian student cyclists in Strasbourg via live stream.
+
+**Core Features:**
+
+- Display registered locations on an interactive map.
+- Allow users to submit new locations via a form.
+- Provide information about the project initiative.
+
+**Technology Stack:**
+
+- **Frontend Framework:** React with Next.js
+- **Styling:** Tailwind CSS
+- **UI Components:** ShadCN/UI
+- **Database & Backend:** Supabase
+- **Mapping:** Google Maps Platform (Maps JavaScript API, potentially Geocoding API)
+
+## 2. Development Phases & Steps
+
+### Phase 1: Setup & Foundation
+
+#### Step 1.1: Initialize Next.js Project
+
+Create a new Next.js project:
+
+```bash
+npx create-next-app@latest pumpaj-za-pravdu --typescript --tailwind --eslint
+```
+
+Navigate into the project directory.
+
+#### Step 1.2: Install Dependencies
+
+- Install ShadCN/UI: Follow the official ShadCN/UI installation guide (`npx shadcn-ui@latest init`). Configure `globals.css` and `tailwind.config.js` as per instructions.
+- Install Google Maps React wrapper (optional but recommended): `npm install @react-google-maps/api`
+- Install Supabase client: `npm install @supabase/supabase-js`
+
+#### Step 1.3: Setup Supabase Project
+
+Create a new project on Supabase.
+
+Note down the Project URL and anon key.
+
+#### Step 1.4: Environment Variables
+
+Create a `.env.local` file in the project root.
+
+Add Supabase URL and Anon Key:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+```
+
+Add Google Maps API Key (obtain from Google Cloud Console):
+
+```bash
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
+```
+
+> Ensure Google Maps JavaScript API and Geocoding API are enabled in the Google Cloud Console for your key. Restrict the key usage to your domain(s).
+
+#### Step 1.5: Basic Layout & Supabase Client
+
+Configure the root layout (`app/layout.tsx`) with basic HTML structure, Tailwind CSS setup, and potentially a global context or utility for the Supabase client.
+
+Create a Supabase client utility file (e.g., `lib/supabaseClient.ts`) to initialize the client using environment variables.
+
+### Phase 2: Database Schema
+
+#### Step 2.1: Define `locations` Table
+
+In the Supabase dashboard (SQL Editor or Table Editor), create a table named `locations`.
+
+Columns:
+
+```sql
+id: uuid, Primary Key (default: gen_random_uuid())
+created_at: timestamp with time zone (default: now())
+name: text, not null
+google_maps_link: text, not null (Store the user-provided link)
+event_url: text, not null (Link to social media/website post)
+email: text, not null (Submitter's email)
+latitude: float8, not null (Geocoded latitude)
+longitude: float8, not null (Geocoded longitude)
+approved: boolean, default: false (Optional: for moderation before showing on map)
+```
+
+Enable Row Level Security (RLS) on the table. Define policies:
+
+- Allow public read access (SELECT) for `approved = true` locations:
+
+  ```sql
+  CREATE POLICY "Allow public read access" ON locations FOR SELECT USING (approved = true);
+  ```
+
+- Allow public INSERT access for new locations (initially with `approved = false`):
+
+  ```sql
+  CREATE POLICY "Allow public insert access" ON locations FOR INSERT WITH CHECK (true);
+  ```
+
+- Restrict UPDATE and DELETE to specific roles (e.g., admin or service_role):
+
+  ```sql
+  CREATE POLICY "Allow admin update access" ON locations FOR UPDATE USING (auth.role() = 'admin');
+  ```
+
+### Phase 3: Home Page - Map & Navigation
+
+#### Step 3.1: Create Home Page Component (`app/page.tsx`)
+
+Set up the main page component. Consider naming it `HomePage` or similar. It will primarily render the map and the navigation bar.
+
+#### Step 3.2: Implement Navigation Bar Component
+
+Create a new component (e.g., `components/NavigationBar.tsx`).
+
+Use Tailwind CSS for styling a floating, rectangular bar at the top.
+
+- **Left side:** Display the project title "Pumpaj za pravdu".
+- **Right side:**
+  - Add a ShadCN Button component for "Add" (default variant).
+  - Add a ShadCN Button component for "About" (primary variant).
+
+Integrate this `NavigationBar` component into `app/page.tsx`.
+
+#### Step 3.3: Integrate Google Maps
+
+Create a dedicated map component (e.g., `components/MapComponent.tsx`).
+
+Use `@react-google-maps/api` or vanilla Google Maps JavaScript API.
+
+Load the Google Maps script using the `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` from environment variables.
+
+Render a full-screen map centered appropriately (e.g., on Serbia or a central European point).
+
+Integrate `MapComponent` into `app/page.tsx`.
+
+#### Step 3.4: Fetch and Display Location Pins
+
+In `app/page.tsx` (using Next.js Server Components for initial load is recommended) or client-side within `MapComponent`, fetch `approved = true` locations from the Supabase `locations` table.
+
+- **Server Component Approach:** Fetch data in `app/page.tsx` and pass it as props to `MapComponent`.
+- **Client Component Approach:** Fetch data using `useEffect` within `MapComponent`.
+
+For each location, extract `latitude` and `longitude`.
+
+Render a default Google Maps marker (`google.maps.Marker`) at each location's coordinates within `MapComponent`.
+
+#### Step 3.5: Implement Marker Clustering
+
+Utilize the `@googlemaps/markerclusterer` library (install it: `npm install @googlemaps/markerclusterer`).
+
+Integrate the marker clusterer within `MapComponent`, linking it with the map instance and the fetched markers. Configure clustering options (e.g., `gridSize`, `maxZoom`) as needed.
+
+### Phase 4: About & Add Modals
+
+#### Step 4.1: Implement "About" Modal
+
+Create a component (e.g., `components/AboutModal.tsx`).
+
+Use the ShadCN `Dialog` or `Sheet` component.
+
+Manage the modal's open/closed state in the Home Page component (`app/page.tsx`) using `useState`.
+
+Pass the state and setter function to `NavigationBar` and `AboutModal`.
+
+Trigger the modal opening via the "About" button's `onClick` handler in `NavigationBar`.
+
+Inside `AboutModal`: Display the project description text.
+
+#### Step 4.2: Implement "Add Location" Modal Structure
+
+Create a component (e.g., `components/AddLocationModal.tsx`).
+
+Use the ShadCN `Dialog` or `Sheet` component.
+
+Manage the modal's open/closed state in `app/page.tsx` using `useState`.
+
+Pass the state and setter function to `NavigationBar` and `AddLocationModal`.
+
+Trigger the modal opening via the "Add" button's `onClick` handler in `NavigationBar`.
+
+#### Step 4.3: Create "Add Location" Form
+
+Inside `AddLocationModal`, create a `form` element.
+
+Use ShadCN `Input`, `Label`, and `Button` components for the fields:
+
+- Name (text input)
+- Google Maps Link (url input)
+- Social Media/Website URL (url input)
+- Email (email input)
+
+Add a primary styled ShadCN `Button` for submission (type="submit", text: "Submit" or "Prijavi").
+
+Implement basic client-side validation (e.g., required fields, valid URL/email formats using form libraries or native HTML5 validation).
+
+### Phase 5: Add Location Logic & Geocoding
+
+#### Step 5.1: Handle Form Submission
+
+Attach an `onSubmit` handler to the form within `AddLocationModal`.
+
+Prevent default form submission (`event.preventDefault()`).
+
+Gather form data into a state object.
+
+#### Step 5.2: Geocoding Strategy (Backend)
+
+Recommended: Create a Supabase Edge Function (e.g., in `supabase/functions/geocode-location/index.ts`).
+
+This function should:
+
+- Accept the `google_maps_link` as input.
+- Securely call the Google Geocoding API using an API key stored as a Supabase secret (set via the dashboard or CLI).
+- Parse the response to extract `latitude` and `longitude` and return them. Handle potential errors from the API.
+
+If using Edge Function: Invoke the function from the client-side form submission handler using `supabase.functions.invoke('geocode-location', { body: { google_maps_link: formData.googleMapsLink } })`. Handle the returned coordinates or errors.
+
+#### Step 5.3: Insert Data into Supabase
+
+Once coordinates are obtained (from the Edge Function response or alternative methods):
+
+Construct the final data object matching the `locations` table schema (including `name`, `google_maps_link`, `event_url`, `email`, `latitude`, `longitude`, and potentially `approved: false`).
+
+Use the Supabase client library (`await supabase.from('locations').insert(dataObject)`) to insert the new record.
+
+Handle potential errors during insertion (e.g., using a `try/catch` block).
+
+Provide user feedback after the insertion attempt:
+
+- On success: Show a success message (e.g., using ShadCN `Toast`) and close the `AddLocationModal`.
+- On error: Show an error message (e.g., using ShadCN `Toast`).
+
+### Phase 6: Refinements & Deployment
+
+#### Step 6.1: Styling and UI Polish
+
+Refine Tailwind CSS styles for all components (`NavigationBar`, `MapComponent`, modals, form elements).
+
+Ensure responsiveness across different screen sizes (mobile, tablet, desktop).
+
+Consider adding loading states (e.g., spinners) during data fetching or form submission.
+
+Optional Enhancement: Add `google.maps.InfoWindow` to show location details when a pin is clicked.
+
+#### Step 6.2: Error Handling
+
+Implement robust error handling for all asynchronous operations (Supabase fetch/insert, Google Maps API loading, Edge Function invocation).
+
+Display user-friendly error messages, possibly using ShadCN `Toast` or `Alert` components.
+
+#### Step 6.3: Moderation
+
+If the `approved` flag is used, build a simple admin interface (could be a separate password-protected page in Next.js or rely on direct Supabase table management) to review submissions (`approved = false`) and toggle the flag to `true`. Update RLS policies if admin roles are used.
+
+> This step is optional and depends on whether moderation is required.
+
+#### Step 6.4: Testing
+
+Test form submission (including validation and geocoding).
+
+Test map display, pin rendering, and clustering functionality.
+
+Test modal opening/closing and content display.
+
+Test responsiveness on different browsers and devices.
+
+#### Step 6.5: Deployment
+
+Deploy the Next.js application to a hosting provider like Vercel or Netlify.
+
+Configure environment variables (`NEXT_PUBLIC_...`) in the deployment environment settings.
+
+Configure Supabase secrets (like the Google API key for the Edge Function) securely.
+
+Set up custom domain if required.
+
+## 3. Key Considerations
+
+- **Geocoding Costs:** Using the Google Geocoding API might incur costs. Monitor usage via Google Cloud Console and set quotas/budgets.
+- **Google Maps Link Parsing:** Avoid client-side parsing of Google Maps URLs due to fragility. The Edge Function / Geocoding API approach is strongly recommended.
+- **Moderation:** The `approved` flag provides a mechanism for manual review. Implement the review process if needed.
+- **Scalability:** Monitor Supabase usage and upgrade plans if necessary. Optimize database queries (e.g., indexing `approved`, `latitude`, `longitude`).
+- **User Experience:** Ensure clear instructions, simple form flow, and immediate feedback (loading states, success/error messages).
+
+This plan provides a structured approach to building the "Pumpaj za pravdu" website. Each phase and step can be tackled incrementally, allowing for focused development using the specified technology stack.
+```
+
+This markdown-formatted version uses:
+
+- `#` for the main title.
+- `##` for major sections (e.g., "1. Project Overview").
+- `###` for phases and `####` for steps to maintain hierarchy.
+- `**` for bolding keys in key-value pairs.
+- `-` for unordered lists.
+- ``` for code blocks (with language identifiers like `bash` or `sql` where applicable).
+- `>` for blockquotes to highlight notes or important considerations.
+- Inline `` ` `` for file names and short code snippets.
+
+The structure is consistent and readable, suitable for use in markdown viewers or editors. Due to the length of the original text, this response includes the full formatted plan up to the end of the provided content, applying the markdown styling comprehensively as requested.
