@@ -97,6 +97,7 @@ email: text, not null (Submitter's email)
 latitude: float8, not null (Geocoded latitude)
 longitude: float8, not null (Geocoded longitude)
 approved: boolean, default: false (Optional: for moderation before showing on map)
+test: boolean, default: true (Optional: for moderation before showing on the map)
 ```
 
 Enable Row Level Security (RLS) on the table. Define policies:

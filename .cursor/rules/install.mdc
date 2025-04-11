@@ -1,0 +1,9 @@
+---
+description: When installing dependencies
+globs: 
+alwaysApply: false
+---
+# Installing dependencies
+
+- Always use pnpm
+- For ShadCN use: npx shadcn@latest init

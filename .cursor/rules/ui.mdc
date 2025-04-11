@@ -1,0 +1,9 @@
+---
+description: When doing anything with UI components and when creating new UI elements
+globs: 
+alwaysApply: false
+---
+# UI Component rules
+
+- Always create re-usable components throughout the project
+- Always use a ShadCN component when ever possible
